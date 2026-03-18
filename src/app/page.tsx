@@ -1,6 +1,24 @@
-import Image from "next/image";
+'use client'
+
+import { useState, useTransition } from 'react'
+import { addToWaitlist } from './actions'
 
 export default function Home() {
+  const [isPending, startTransition] = useTransition()
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+
+  async function handleSubmit(formData: FormData) {
+    setMessage(null)
+    startTransition(async () => {
+      const result = await addToWaitlist(formData)
+      if (result.error) {
+        setMessage({ type: 'error', text: result.error })
+      } else {
+        setMessage({ type: 'success', text: "You're on the list! We'll be in touch soon." })
+      }
+    })
+  }
+
   return (
     <div className="flex h-screen flex-col items-center justify-between bg-[#fcfdfe] px-6 py-8 font-sans text-slate-900 selection:bg-brand-green/30 overflow-hidden">
       {/* Header / Logo */}
@@ -26,16 +44,36 @@ export default function Home() {
 
           {/* Waitlist Form */}
           <div className="w-full max-w-md">
-            <div className="relative flex items-center p-1.5 rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-slate-200/50 transition-all focus-within:ring-brand-green/20 focus-within:shadow-[0_8px_30px_rgb(16,185,129,0.08)]">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="w-full bg-transparent px-5 py-3 text-sm font-medium outline-none placeholder:text-slate-400"
-              />
-              <button className="whitespace-nowrap rounded-xl bg-brand-green px-6 py-3 text-sm font-bold text-white transition-all hover:bg-brand-green-dark active:scale-[0.98] shadow-lg shadow-brand-green/20">
-                Notify Me
-              </button>
-            </div>
+            <form action={handleSubmit} className="relative flex flex-col items-center gap-4">
+              <div className="relative w-full flex items-center p-1.5 rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-slate-200/50 transition-all focus-within:ring-brand-green/20 focus-within:shadow-[0_8px_30px_rgb(16,185,129,0.08)]">
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  disabled={isPending}
+                  placeholder="Enter your email"
+                  className="w-full bg-transparent px-5 py-3 text-sm font-medium outline-none placeholder:text-slate-400 disabled:opacity-50"
+                />
+                <button 
+                  type="submit"
+                  disabled={isPending}
+                  className="whitespace-nowrap rounded-xl bg-brand-green px-6 py-3 text-sm font-bold text-white transition-all hover:bg-brand-green-dark active:scale-[0.98] shadow-lg shadow-brand-green/20 disabled:opacity-50"
+                >
+                  {isPending ? 'Joining...' : 'Notify Me'}
+                </button>
+              </div>
+              
+              {/* Message Feedback */}
+              {message && (
+                <div className={`text-xs font-bold px-4 py-2 rounded-lg animate-in fade-in zoom-in-95 duration-300 ${
+                  message.type === 'success' 
+                  ? 'bg-brand-green/10 text-brand-green' 
+                  : 'bg-red-500/10 text-red-500'
+                }`}>
+                  {message.text}
+                </div>
+              )}
+            </form>
           </div>
         </div>
       </main>
@@ -56,5 +94,5 @@ export default function Home() {
         </p>
       </footer>
     </div>
-  );
+  )
 }
